@@ -1,3 +1,9 @@
+const connection = require("./config/connection");
+const inquirer = require("inquirer");
+const cTable = require("console.table");
+const chalk = require("chalk");
+const validate = require("./javascript/validate");
+
 // Database Connect and Starter Title
 connection.connect((error) => {
     if (error) throw error;
@@ -282,6 +288,197 @@ const viewAllEmployees = async () => {
         )
       );
       promptUser();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  // Add a New Employee
+const addEmployee = async () => {
+    try {
+      const answers = await inquirer.prompt([
+        {
+          type: "input",
+          name: "firstName",
+          message: "What is the employee's first name?",
+          validate: (addFirstName) => {
+            if (addFirstName) {
+              return true;
+            } else {
+              console.log("Please enter a first name");
+              return false;
+            }
+          },
+        },
+        {
+          type: "input",
+          name: "lastName",
+          message: "What is the employee's last name?",
+          validate: (addLastName) => {
+            if (addLastName) {
+              return true;
+            } else {
+              console.log("Please enter a last name");
+              return false;
+            }
+          },
+        },
+      ]);
+  
+      const roleData = await connection
+        .promise()
+        .query("SELECT role.id, role.title FROM role");
+      const roles = roleData[0].map(({ id, title }) => ({
+        name: title,
+        value: id,
+      }));
+  
+      const roleChoice = await inquirer.prompt([
+        {
+          type: "list",
+          name: "role",
+          message: "What is the employee's role?",
+          choices: roles,
+        },
+      ]);
+  
+      const managerData = await connection
+        .promise()
+        .query("SELECT * FROM employee");
+      const managers = managerData[0].map(({ id, first_name, last_name }) => ({
+        name: first_name + " " + last_name,
+        value: id,
+      }));
+  
+      const managerChoice = await inquirer.prompt([
+        {
+          type: "list",
+          name: "manager",
+          message: "Who is the employee's manager?",
+          choices: managers,
+        },
+      ]);
+  
+      const crit = [
+        answers.firstName,
+        answers.lastName,
+        roleChoice.role,
+        managerChoice.manager,
+      ];
+  
+      const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id)
+                    VALUES (?, ?, ?, ?)`;
+  
+      await connection.promise().query(sql, crit);
+  
+      console.log("Employee has been added!");
+      await viewAllEmployees();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
+  // Add a New Role
+  const addRole = async () => {
+    try {
+      const [response] = await connection
+        .promise()
+        .query("SELECT * FROM department");
+      let deptNamesArray = response.map(
+        (department) => department.department_name
+      );
+      deptNamesArray.push("Create Department");
+  
+      const answer = await inquirer.prompt([
+        {
+          name: "departmentName",
+          type: "list",
+          message: "Which department is this new role in?",
+          choices: deptNamesArray,
+        },
+      ]);
+  
+      if (answer.departmentName === "Create Department") {
+        await addDepartment();
+      } else {
+        await addRoleResume(answer);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
+  const addRoleResume = async (departmentData) => {
+    try {
+      const answer = await inquirer.prompt([
+        {
+          name: "newRole",
+          type: "input",
+          message: "What is the name of your new role?",
+          validate: validate.validateString,
+        },
+        {
+          name: "salary",
+          type: "input",
+          message: "What is the salary of this new role?",
+          validate: validate.validateSalary,
+        },
+      ]);
+  
+      let createdRole = answer.newRole;
+      let departmentId;
+  
+      departmentData.forEach((department) => {
+        if (departmentData.departmentName === department.department_name) {
+          departmentId = department.id;
+        }
+      });
+  
+      const sql = `INSERT INTO role (title, salary, department_id) VALUES (?, ?, ?)`;
+      const crit = [createdRole, answer.salary, departmentId];
+  
+      await connection.promise().query(sql, crit);
+  
+      console.log(
+        chalk.green.bold(
+          `====================================================================================`
+        )
+      );
+      console.log(chalk.greenBright(`Role successfully created!`));
+      console.log(
+        chalk.green.bold(
+          `====================================================================================`
+        )
+      );
+      await viewAllRoles();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
+  // Add a New Department
+  const addDepartment = async () => {
+    try {
+      const answer = await inquirer.prompt([
+        {
+          name: "newDepartment",
+          type: "input",
+          message: "What is the name of your new Department?",
+          validate: validate.validateString,
+        },
+      ]);
+  
+      const sql = `INSERT INTO department (department_name) VALUES (?)`;
+      await connection.promise().query(sql, answer.newDepartment);
+  
+      console.log(``);
+      console.log(
+        chalk.greenBright(
+          answer.newDepartment + ` Department successfully created!`
+        )
+      );
+      console.log(``);
+      await viewAllDepartments();
     } catch (error) {
       console.error(error);
     }
