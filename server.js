@@ -103,6 +103,8 @@ connection.connect((error) => {
       });
   };
 
+
+
   // View All Employees
 const viewAllEmployees = async () => {
     try {
