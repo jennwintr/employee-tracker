@@ -2,16 +2,35 @@
   "name": "employee-tracker",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migrate": "mysql db/employees.db < db/schema.sql",
+    "seed": "mysql db/employees.db < db/seeds.sql",
+    "db": "mysql db/employees.db",
+    "watch": "nodemon server.js",
+    "start": "node server.js"
   },
-  "keywords": [],
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
   "author": "",
   "license": "ISC",
+  "bugs": {
+    "url": ""
+  },
+  "homepage": "",
   "dependencies": {
+    "chalk": "^4.0.0",
     "console.table": "^0.10.0",
-    "inquirer": "^8.2.4",
-    "mysql2": "^3.7.0"
+    "dotenv": "^8.6.0",
+    "employees": "^0.0.2",
+    "express": "^4.17.1",
+    "inquire": "^0.4.8",
+    "inquirer": "^7.1.0",
+    "mysql2": "^2.1.0",
+    "nodemon": "^2.0.4",
+    "validator": "^13.0.0"
   }
 }
